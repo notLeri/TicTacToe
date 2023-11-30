@@ -7,9 +7,9 @@ type Player = 'x' | 'o';
 let player: Player = "x";
 
 interface IStat {
-	xWins: number,
-	oWins: number,
-	draws: number,
+	readonly xWins: number,
+	readonly oWins: number,
+	readonly draws: number,
 
     addWin(player: Player): void;
     addDraw(): void;
@@ -24,10 +24,14 @@ class Stat implements IStat {
         return this._xWins;
     }
 
+    public set xWins(value: number) {
+        this._xWins = value;
+    }
+
     public get oWins(): number {
         return this._oWins;
     }
-    
+
     public get draws(): number {
         return this._draws;
     }
