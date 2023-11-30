@@ -1,95 +1,152 @@
-let area = document.getElementById('area');
-let cell = document.getElementsByClassName('cell');
-let currentPlayer = document.getElementById('curPlyr');
+const area: HTMLDivElement = document.getElementById('area')! as HTMLDivElement;
+const cells: HTMLCollectionOf<HTMLDivElement> = document.getElementsByClassName('cell') as HTMLCollectionOf<HTMLDivElement>;
+const currentPlayer: HTMLSpanElement = document.getElementById('curPlyr') as HTMLSpanElement;
 
-let player = "x";
-let stat = {
-    'x': 0,
-    'o': 0,
-    'd': 0
-}
-const winIndex = [
-    [1,2,3],
-    [4,5,6],
-    [7,8,9],
-    [1,4,7],
-    [2,5,8],
-    [3,6,9],
-    [1,5,9],
-    [3,5,7]
-];
+type Player = 'x' | 'o';
 
-for(let i = 1; i <= 9; i++) {
-    area.innerHTML += "<div class='cell' pos=" + i + "></div>";
+let player: Player = "x";
+
+interface IStat {
+	xWins: number,
+	oWins: number,
+	draws: number,
+
+    addWin(player: Player): void;
+    addDraw(): void;
 }
 
-for (let i = 0; i< cell.length; i++) {
-    cell[i].addEventListener('click', cellClick, false);
-}
-
-function cellClick() {
-
-    let data = [];
+class Stat implements IStat {
+    private _xWins: number;
+	private _oWins: number;
+	private _draws: number;
     
-    if(!this.innerHTML) {
-        this.innerHTML = player;
-    }else {
-        alert("Ячейка занята");
-        return;
+    public get xWins(): number {
+        return this._xWins;
     }
 
-    for(let i in cell){
-        if(cell[i].innerHTML == player){
-            data.push(parseInt(cell[i].getAttribute('pos')));
-        }
+    public get oWins(): number {
+        return this._oWins;
     }
-
-    if(checkWin(data)) {
-        stat[player] += 1;
-        restart("Выграл: " + player);
-    }else {
-        let draw = true;
-        for(let i in cell) {
-            if(cell[i].innerHTML == '') draw = false;
-        }
-        if(draw) {
-            stat.d += 1;
-            restart("Ничья");
-        }
-    }
-
-    player = player == "x" ? "o" : "x";
-    currentPlayer.innerHTML = player.toUpperCase();
-}
-
-function checkWin(data) {
-    for(let i in winIndex) {
-        let win = true;
-        for(let j in winIndex[i]) {
-            let id = winIndex[i][j];
-            let ind = data.indexOf(id);
-
-            if(ind == -1) {
-                win = false
-            }
-        }
-
-        if(win) return true;
-    }
-    return false;
-}
-
-function restart(text) {
     
-    alert(text);
-    for(let i = 0; i < cell.length; i++) {
-        cell[i].innerHTML = '';
+    public get draws(): number {
+        return this._draws;
     }
-    updateStat();
+
+    constructor() {
+        this._xWins = 0;
+        this._oWins = 0;
+        this._draws = 0;
+    }
+
+    public addWin(player: Player): void {
+        if (player === "x") { 
+            this._xWins += 1;
+        } else {
+            this._oWins += 1;
+        }
+    }
+    
+    public addDraw(): void {
+        this._draws += 1;
+    }
+
 }
 
-function updateStat() {
-    document.getElementById('sX').innerHTML = stat.x;
-    document.getElementById('sO').innerHTML = stat.o;
-    document.getElementById('sD').innerHTML = stat.d;
+const stat: IStat = new Stat();
+
+type WinPositions = readonly [number, number, number];
+
+const winIndex: readonly WinPositions[] = [
+	[1,2,3],
+	[4,5,6],
+	[7,8,9],
+	[1,4,7],
+	[2,5,8],
+	[3,6,9],
+	[1,5,9],
+	[3,5,7],
+] as const;
+
+for (let i: number = 1; i <= 9; i++) {
+	area.innerHTML += "<div class='cell' pos=" + i + "></div>";
+}
+
+const cellsArray: HTMLDivElement[] = Array.from(cells);
+
+cellsArray.forEach(cell => cell.addEventListener('click', createCellClicker(cell), false));
+
+function newPlayer(player: Player): Player {
+	return  player === "x" ? "o" : "x";
+}
+
+function setCurrentPlayer(player: Player): void {
+	currentPlayer.innerHTML = player.toUpperCase();
+}
+
+function createCellClicker(cell: HTMLDivElement): EventListenerOrEventListenerObject {
+    return () => cellClick(cell);
+}
+
+function cellClick(kletka: HTMLDivElement): void {
+
+	const data: number[] = [];
+
+	if (!kletka.innerHTML) {
+		kletka.innerHTML = player;
+	} else {
+		alert("Ячейка занята");
+		return;
+	}
+
+	cellsArray.forEach((cell: HTMLDivElement) =>
+		cell.innerHTML === player && data.push(parseInt(cell.getAttribute('pos')!))
+	)
+
+	if (checkWin(data)) {
+		stat.addWin(player);
+		restart("Выиграл: " + player);
+	} else {
+		const draw: boolean = cellsArray.every(cell => cell.innerHTML !== '');
+
+		if (draw) {
+			stat.addDraw();
+			restart("Ничья");
+		}
+	}
+
+	player = newPlayer(player);
+	setCurrentPlayer(player);
+}
+
+function checkWin(data): boolean {
+	for (let i in winIndex) {
+		let win = true;
+		for (let j in winIndex[i]) {
+			let id = winIndex[i][j];
+			let ind = data.indexOf(id);
+
+			if(ind == -1) {
+				win = false
+			}
+		}
+
+		if(win) return true;
+	}
+
+	return false;
+}
+
+function restart(text: string): void {
+
+	alert(text);
+	for(let i = 0; i < cells.length; i++) {
+		cells[i].innerHTML = '';
+	}
+	updateStat();
+}
+
+function updateStat(): void {
+	document.getElementById('sX')!.innerHTML = stat.xWins.toString();
+	document.getElementById('sO')!.innerHTML = stat.oWins.toString();
+	document.getElementById('sD')!.innerHTML = stat.draws.toString();
 }
